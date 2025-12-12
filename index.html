@@ -3,177 +3,146 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>מערכת השוואת שעות - פיל vs מתן</title>
-    
+    <title>מערכת שעות ושכר - מתן</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
-    
     <style>
         :root {
-            --primary: #2c3e50;
-            --secondary: #3498db;
-            --success: #27ae60;
-            --warning: #f39c12;
-            --danger: #e74c3c;
-            --light: #f8f9fa;
-            --dark: #2c3e50;
-            
-            /* צבעי שורות */
-            --row-weekend: #ffe6e6;
-            --row-event: #fff0e6;
-            --row-camp: #e6f7ff;
-            --row-approved: #d4f7d4;
-            --row-missing: #fff9c4;
+            --primary: #2c3e50; --secondary: #3498db; --bg-color: #f4f6f8;
+            --row-weekend: #ffebee; --row-event: #fff3e0; --approved-bg: #e8f5e9; --missing-bg: #fff9c4;
         }
-
         * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: #f0f2f5; margin: 0; padding: 20px; color: var(--dark); }
+        body { background-color: var(--bg-color); margin: 0; padding: 20px; color: #333; }
 
-        .container {
-            max-width: 1600px; margin: 0 auto; background: white; padding: 20px;
-            border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-
-        /* כותרת ובקרים */
-        header {
-            display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;
-            margin-bottom: 20px; border-bottom: 2px solid var(--light); padding-bottom: 15px;
-        }
-        h1 { margin: 0; color: var(--primary); }
-
-        .controls-group {
-            display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 15px;
-            background: var(--light); padding: 10px; border-radius: 8px;
-        }
-
-        select, input[type="file"] { padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; }
-
-        button {
-            padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer;
-            font-weight: bold; transition: all 0.3s; color: white;
-        }
-        .btn-primary { background-color: var(--secondary); }
-        .btn-success { background-color: var(--success); }
-        .btn-danger { background-color: var(--danger); }
-        .btn-warning { background-color: var(--warning); color: #333; }
-        button:hover { opacity: 0.9; transform: translateY(-1px); }
-
-        /* כפתורי סינון (Filter Toggles) */
-        .filter-toggle {
-            background: white; border: 1px solid #ccc; color: #333; 
-            padding: 6px 12px; border-radius: 20px; cursor: pointer; user-select: none;
-            display: flex; align-items: center; gap: 5px; font-size: 0.9rem;
-        }
-        .filter-toggle.active { background: var(--primary); color: white; border-color: var(--primary); }
-        .filter-toggle:hover { background: #eee; }
-        .filter-toggle.active:hover { background: #1a252f; }
-
-        /* טבלה */
-        .table-responsive { overflow-x: auto; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.05); margin-top: 10px; }
-        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; min-width: 1400px; }
-        th { background-color: var(--primary); color: white; padding: 12px 8px; text-align: center; position: sticky; top: 0; white-space: nowrap; }
-        td { padding: 6px 8px; border-bottom: 1px solid #eee; text-align: center; vertical-align: middle; }
-
-        /* קלטים בטבלה */
-        td input[type="time"], td input[type="number"], td select {
-            width: 100%; padding: 4px; border: 1px solid #ccc; border-radius: 4px; background: rgba(255,255,255,0.7);
-        }
-        td input[type="text"] { width: 100%; min-width: 120px; padding: 4px; border: 1px solid #ccc; border-radius: 4px; }
-
-        /* צבעי שורות */
-        tr.row-weekend { background-color: var(--row-weekend); }
-        tr.row-event { background-color: var(--row-event); }
-        tr.row-camp { background-color: var(--row-camp); }
-        tr.row-approved { background-color: var(--row-approved) !important; }
-        tr.row-missing { background-color: var(--row-missing); }
-
-        /* סיכומים */
-        .summary-section {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px; margin-top: 20px; padding: 15px; background: var(--light); border-radius: 8px;
-        }
-        .summary-card {
-            background: white; padding: 15px; border-radius: 8px; text-align: center;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        }
-        .summary-card h3 { margin: 0 0 10px 0; font-size: 1rem; color: #666; }
-        .summary-card div { font-size: 1.5rem; font-weight: bold; color: var(--primary); }
-
-        /* דוח תחתון */
-        .bottom-report-container {
-            margin-top: 40px; background: #fff; border: 2px solid #e1e4e8; border-radius: 12px; padding: 20px;
-        }
-        .report-header { border-bottom: 2px solid #eee; padding-bottom: 15px; margin-bottom: 20px; }
-        .diff-highlight { font-weight: bold; font-size: 1.2rem; padding: 4px 10px; border-radius: 4px; display: inline-block; margin-top: 5px; }
-        .diff-pos { background: #e8f5e9; color: #2e7d32; }
-        .diff-neg { background: #ffebee; color: #c62828; }
+        /* --- מסך רגיל --- */
+        #app-container { max-width: 100%; margin: 0 auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        h1 { margin: 0; color: var(--primary); font-size: 1.6rem; }
         
-        .phil-section { background: #f8f9fa; padding: 20px; border-radius: 8px; border: 1px solid #dee2e6; }
-        .phil-msg { background: #fff3cd; padding: 15px; border-radius: 6px; border-right: 4px solid #ffc107; margin-bottom: 15px; }
+        .toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 15px; background: #fff; padding: 10px; border-radius: 8px; border: 1px solid #ddd; }
+        .toolbar-group { display: flex; gap: 5px; align-items: center; padding-left: 10px; border-left: 1px solid #eee; }
+        .toolbar-group:last-child { border-left: none; }
         
-        #message-area { padding: 10px; margin-bottom: 10px; border-radius: 6px; display: none; text-align: center; font-weight: bold; }
-        .msg-success { background: #d4edda; color: #155724; }
-        .msg-error { background: #f8d7da; color: #721c24; }
+        button { padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; color: white; display: flex; align-items: center; gap: 5px; }
+        .btn-primary { background-color: var(--secondary); } .btn-success { background-color: #27ae60; } .btn-danger { background-color: #e74c3c; } .btn-warning { background-color: #f39c12; } .btn-info { background-color: #17a2b8; } .btn-whatsapp { background-color: #25D366; }
+        select, input[type="file"] { padding: 6px 10px; border: 1px solid #ccc; border-radius: 4px; }
+
+        /* טבלה במסך */
+        .table-responsive { width: 100%; overflow-x: auto; margin-top: 10px; border: 1px solid #eee; border-radius: 6px; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; min-width: 1200px; }
+        th { background-color: var(--primary); color: white; padding: 12px 6px; text-align: center; position: sticky; top: 0; z-index: 10; }
+        td { padding: 6px 4px; border-bottom: 1px solid #eee; text-align: center; vertical-align: middle; }
+        td input[type="time"] { width: 80px; text-align: center; background: #fafafa; border: 1px solid #ccc; border-radius: 3px; }
+        td input[type="text"] { width: 100%; min-width: 100px; border: 1px solid #ccc; border-radius: 3px; }
         
+        tr.row-weekend { background-color: var(--row-weekend); } tr.row-approved { background-color: var(--approved-bg) !important; } tr.row-missing { background-color: var(--missing-bg); }
+
+        .summary-section { display: flex; gap: 15px; margin-top: 20px; padding: 20px; background: #e3f2fd; border-radius: 12px; flex-wrap: wrap; }
+        .summary-card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); flex: 1; min-width: 140px; text-align: center; border-bottom: 4px solid var(--secondary); }
+        .summary-card .value { font-size: 1.6rem; font-weight: bold; color: var(--primary); }
+
+        .bottom-report { margin-top: 30px; border: 1px solid #ddd; border-radius: 12px; padding: 20px; background: white; }
+        .custom-text-area { width: 100%; height: 120px; padding: 10px; margin-top: 10px; border: 1px solid #ccc; border-radius: 6px; font-family: 'Segoe UI', sans-serif; font-size: 1rem; resize: vertical; }
+        
+        .diff-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        .diff-table th { background: #e74c3c; color: white; padding: 8px; font-size: 0.9rem; }
+        .diff-table td { border: 1px solid #eee; padding: 8px; text-align: center; }
+
+        #message-area { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); padding: 10px 25px; border-radius: 50px; color: white; font-weight: bold; display: none; z-index: 2000; }
+        .msg-success { background: #27ae60; } .msg-error { background: #c0392b; }
         .checkbox-wrapper { display: flex; justify-content: center; }
-        input[type="checkbox"] { width: 20px; height: 20px; cursor: pointer; }
+        input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; accent-color: var(--secondary); }
+        .filters-label { font-weight: bold; margin-left: 5px; font-size: 0.9rem; color: #555; }
 
-        @media (max-width: 768px) { .controls-group { flex-direction: column; width: 100%; } }
+        /* --- הגדרות הדפסה V14 --- */
+        #print-area { display: none; }
+
+        @media print {
+            @page { size: landscape; margin: 5mm; }
+            body, html { margin: 0; padding: 0; background: white; width: 100%; zoom: 95%; /* הקטנה מינימלית בלבד */ }
+            #app-container, #message-area { display: none !important; }
+            #print-area { display: block !important; width: 100%; position: absolute; left: 0; top: 0; }
+
+            .print-page-1 { width: 100%; page-break-after: always; position: relative; }
+            .print-page-2 { width: 100%; page-break-before: always; }
+
+            .print-header { text-align: center; border-bottom: 2px solid #333; margin-bottom: 10px; }
+            
+            /* טבלה להדפסה */
+            .print-table { width: 100%; border-collapse: collapse; font-size: 10pt; table-layout: fixed; } /* פונט קריא */
+            
+            /* רוחב עמודות מאוזן לקריאות */
+            .col-date { width: 7%; }
+            .col-day { width: 5%; }
+            .col-event { width: 10%; }
+            .col-time { width: 8%; }
+            .col-hours { width: 6%; }
+            .col-diff { width: 7%; }
+            .col-notes { width: 15%; }
+            .col-status { width: 5%; }
+
+            .print-table th { background-color: #f0f0f0 !important; color: black !important; border: 1px solid #333; padding: 4px; font-weight: bold; }
+            .print-table td { border: 1px solid #999; padding: 3px; text-align: center; height: 20px; overflow: hidden; white-space: nowrap; }
+            
+            .print-summary-grid { display: flex; gap: 10px; margin-bottom: 20px; justify-content: space-between; border: 1px solid #ccc; padding: 10px; }
+            .print-summary-box { border: 1px solid #000; padding: 10px; flex: 1; text-align: center; background: #fff !important; }
+            .print-summary-box span { font-size: 14pt; font-weight: bold; }
+            
+            .print-letter { font-family: 'Arial', sans-serif; font-size: 12pt; line-height: 1.4; white-space: pre-wrap; margin-bottom: 20px; }
+            
+            .p-row-approved { background-color: #f0fff0 !important; -webkit-print-color-adjust: exact; }
+            .p-row-weekend { background-color: #fff0f0 !important; -webkit-print-color-adjust: exact; }
+            .p-diff { color: black; font-weight: bold; } /* שחור מודגש לקריאות */
+            
+            /* עיצוב הוי */
+            .status-ok { color: green; font-weight: bold; font-size: 1.2em; }
+        }
     </style>
 </head>
 <body>
 
-<div class="container">
+<div id="message-area"></div>
+
+<div id="app-container">
     <header>
-        <h1>מערכת השוואת שעות</h1>
+        <h1>🗓️ מערכת שעות ושכר - מתן</h1>
         <div style="display:flex; gap:10px;">
-            <select id="monthSelect"></select>
-            <select id="yearSelect"></select>
-            <button class="btn-primary" onclick="generateTableData()">🔄 טען חודש</button>
-            <button class="btn-danger" onclick="clearData()">🗑️ נקה</button>
+            <select id="monthSelect" onchange="handleDateChange()"></select>
+            <select id="yearSelect" onchange="handleDateChange()"></select>
         </div>
     </header>
 
-    <div class="controls-group">
-        <span style="font-weight: bold;">פעולות:</span>
-        <input type="file" id="excelFile" accept=".xlsx, .xls" style="display: none;" onchange="handleFile(this)">
-        <button class="btn-success" onclick="document.getElementById('excelFile').click()">📂 טען קובץ פיל</button>
-        <button class="btn-warning" onclick="autoFillMatan()">🤖 מלא מתן אוטומטי</button>
-        <div style="width: 1px; height: 30px; background: #ccc; margin: 0 10px;"></div>
-        <button class="btn-primary" onclick="exportToExcel()">📊 ייצוא Excel</button>
-        <button class="btn-primary" onclick="exportToPDF()">📄 ייצוא PDF מעוצב (2 עמודים)</button>
-    </div>
-
-    <div class="controls-group" style="background: white; border: 1px solid #eee;">
-        <span style="font-weight: bold;">סינון תצוגה:</span>
-        <div class="filter-toggle active" id="btnFilterWeekend" onclick="toggleFilter('weekend')">
-            <span id="iconWeekend">👁️</span> הצג ימי שישי/שבת
+    <div class="toolbar">
+        <div class="toolbar-group">
+            <input type="file" id="excelFile" accept=".xlsx" style="display:none" onchange="handleFile(this)">
+            <button class="btn-success" onclick="document.getElementById('excelFile').click()">📂 טען פיל</button>
+            <button class="btn-warning" onclick="autoFillMatan()">🤖 מלא אוטומטי</button>
+            <button class="btn-danger" onclick="clearData()">🗑️ נקה</button>
         </div>
-        <div class="filter-toggle active" id="btnFilterVacation" onclick="toggleFilter('vacation')">
-            <span id="iconVacation">👁️</span> הצג ימי חופש
+        <div class="toolbar-group">
+            <button class="btn-info" onclick="saveBackup()">💾 גיבוי</button>
+            <input type="file" id="backupFile" accept=".json" style="display:none" onchange="loadBackup(this)">
+            <button class="btn-info" onclick="document.getElementById('backupFile').click()">📥 טען גיבוי</button>
+        </div>
+        <div class="toolbar-group">
+            <button class="btn-primary" onclick="generatePrintView()">🖨️ הדפס / PDF</button>
+            <button class="btn-whatsapp" onclick="sendWhatsapp()">📱 וואטסאפ</button>
+            <button class="btn-primary" onclick="exportToExcel()">📊 Excel</button>
+        </div>
+        <div class="toolbar-group" style="margin-right: auto;">
+            <label class="filters-label"><input type="checkbox" id="toggleWeekend" checked onchange="renderTable()"> סופ"ש</label>
+            <label class="filters-label"><input type="checkbox" id="toggleVacation" checked onchange="renderTable()"> חופשים</label>
+            <label class="filters-label"><input type="checkbox" id="toggleTravel" checked onchange="renderTable()"> נסיעות</label>
         </div>
     </div>
-
-    <div id="message-area"></div>
 
     <div class="table-responsive">
         <table id="mainTable">
             <thead>
                 <tr>
-                    <th>תאריך</th>
-                    <th>יום</th>
-                    <th>אירוע</th>
-                    <th>כניסה פיל</th>
-                    <th>יציאה פיל</th>
-                    <th>שעות פיל</th>
-                    <th>כניסה מתן</th>
-                    <th>יציאה מתן</th>
-                    <th>שעות מתן</th>
-                    <th>איחור</th>
-                    <th>הפרש</th>
-                    <th>הערות</th>
-                    <th>מאושר</th>
+                    <th width="5%">תאריך</th> <th width="5%">יום</th> <th width="8%">אירוע</th> <th width="4%">נסיעה</th>
+                    <th style="background:#546e7a">כניסה (פיל)</th> <th style="background:#546e7a">יציאה (פיל)</th> <th style="background:#546e7a">סה"כ</th>
+                    <th style="background:#2980b9">כניסה (מתן)</th> <th style="background:#2980b9">יציאה (מתן)</th> <th style="background:#2980b9">סה"כ</th>
+                    <th width="5%">איחור</th> <th width="5%">הפרש</th> <th>הערות</th> <th width="5%">מאושר</th>
                 </tr>
             </thead>
             <tbody id="tableBody"></tbody>
@@ -181,691 +150,367 @@
     </div>
 
     <div class="summary-section">
-        <div class="summary-card">
-            <h3>סה"כ שעות פיל</h3>
-            <div id="totalPhil">0.00</div>
-        </div>
-        <div class="summary-card">
-            <h3>סה"כ שעות מתן</h3>
-            <div id="totalMatan">0.00</div>
-        </div>
-        <div class="summary-card">
-            <h3>הפרש כולל</h3>
-            <div id="totalDiff" style="color: var(--secondary)">0.00</div>
-        </div>
-        <div class="summary-card">
-            <h3>איחורים (דקות)</h3>
-            <div id="totalLateness">0</div>
+        <div class="summary-card"><h3>שעות פיל</h3><div id="sumPhil" class="value">0.00</div></div>
+        <div class="summary-card"><h3>שעות מתן</h3><div id="sumMatan" class="value">0.00</div></div>
+        <div class="summary-card"><h3>הפרש</h3><div id="sumDiff" class="value">0.00</div></div>
+        <div class="summary-card" style="border-color:#e74c3c"><h3>איחורים (דק')</h3><div id="sumLate" class="value" style="color:#e74c3c">0</div></div>
+        <div class="summary-card" style="border-color:#27ae60; background:#f0fff4">
+            <h3>לתשלום</h3>
+            <div id="sumSalary" class="value" style="color:#27ae60">₪0</div>
+            <div id="travelBreakdown" class="travel-detail">כולל נסיעות: ₪0</div>
         </div>
     </div>
 
-    <div class="bottom-report-container">
-        <div class="report-header">
-            <h2>📈 דוח הפרשים וסיכום</h2>
-            <span id="reportNarrative" class="diff-highlight">...</span>
-        </div>
+    <div class="bottom-report">
+        <h2 style="margin:0 0 10px 0; color:var(--primary);">📝 עריכת מכתב נלווה (לדף 2)</h2>
+        <textarea id="customEmailText" class="custom-text-area" oninput="saveData()"></textarea>
 
-        <div class="phil-section">
-            <h3>📋 שורות הדורשות טיפול (הפרשים לא מאושרים)</h3>
-            <div class="phil-msg">
-                👋 היי פיל! הטבלה הזו מציגה רק שורות עם הפרשי שעות שטרם אושרו. סמן "מאושר" בטבלה הראשית כדי להסיר אותן מכאן.
-            </div>
-            <div class="table-responsive">
-                <table id="philTable">
-                    <thead>
-                        <tr>
-                            <th>תאריך</th>
-                            <th>שעות פיל</th>
-                            <th>שעות מתן</th>
-                            <th>הפרש</th>
-                            <th>הערות</th>
-                        </tr>
-                    </thead>
-                    <tbody id="philReportBody"></tbody>
-                </table>
-            </div>
-            <div id="philEmptyMsg" style="text-align: center; padding: 20px; font-weight: bold; color: var(--success); display: none;">
-                🎉 אין פערים! הכל מאושר.
-            </div>
+        <h3 style="margin-top:20px; border-bottom:1px solid #eee; padding-bottom:5px;">📋 פירוט שורות לטיפול:</h3>
+        <div id="screenNoDiffs" style="color:#27ae60; font-weight:bold; display:none; padding:10px;">✨ אין פערים! הטבלה תהיה ריקה בדוח.</div>
+        <table class="diff-table" id="screenDiffTable">
+            <thead>
+                <tr>
+                    <th>תאריך</th> <th>שעות פיל</th> <th>שעות מתן</th> <th>הפרש</th> <th>הערות</th>
+                </tr>
+            </thead>
+            <tbody id="screenDiffBody"></tbody>
+        </table>
+    </div>
+</div>
+
+<div id="print-area">
+    <div class="print-page-1">
+        <div class="print-header">
+            <h1>דוח שעות מפורט - <span id="pDate1"></span></h1>
         </div>
+        <table class="print-table" id="printTableBody">
+            <thead>
+                <tr>
+                    <th class="col-date">תאריך</th> 
+                    <th class="col-day">יום</th> 
+                    <th class="col-event">אירוע</th>
+                    <th class="col-time">כניסה (פ)</th> 
+                    <th class="col-time">יציאה (פ)</th> 
+                    <th class="col-hours">שעות (פ)</th>
+                    <th class="col-time" style="font-weight:bold; border-right:2px solid #333">כניסה (מ)</th> 
+                    <th class="col-time" style="font-weight:bold">יציאה (מ)</th> 
+                    <th class="col-hours" style="font-weight:bold">שעות (מ)</th>
+                    <th class="col-diff">הפרש</th> 
+                    <th class="col-notes">הערות</th>
+                    <th class="col-status">אישור</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
     </div>
 
-    <footer>נבנה עבור מתן & פיל</footer>
+    <div class="print-page-2">
+        <div class="print-header">
+            <h1>סיכום שעות ושכר - <span id="pDate2"></span></h1>
+        </div>
+
+        <div class="print-summary-grid">
+            <div class="print-summary-box"><h3>סה"כ שעות מתן</h3><span id="p2SumMatan"></span></div>
+            <div class="print-summary-box"><h3>סה"כ שעות פיל</h3><span id="p2SumPhil"></span></div>
+            <div class="print-summary-box"><h3>הפרש שעות</h3><span id="p2SumDiff"></span></div>
+            <div class="print-summary-box" style="border:2px solid black">
+                <h3>סה"כ לתשלום</h3><span id="p2SumPay"></span>
+                <div id="p2Travel" style="font-size:10pt; margin-top:5px;"></div>
+            </div>
+        </div>
+
+        <div class="print-letter">
+            <strong>נושא: דוח שעות <span id="pDateLetter"></span> - מתן</strong><br><br>
+            <div id="printLetterContent"></div>
+        </div>
+
+        <h3>פירוט שורות עם פערים / דורשות התייחסות:</h3>
+        <table class="print-table" style="width:100%;">
+            <thead>
+                <tr>
+                    <th style="width:15%">תאריך</th> <th>שעות פיל</th> <th>שעות מתן</th> <th>הפרש</th> <th>הערת מתן</th>
+                </tr>
+            </thead>
+            <tbody id="diffTableBody"></tbody>
+        </table>
+        <div id="noDiffMsg" style="display:none; text-align:center; font-weight:bold; margin-top:10px;">
+            * אין פערים מהותיים החודש. כל השעות תואמות.
+        </div>
+    </div>
 </div>
 
 <script>
-    // --- הגדרות ---
-    const months = ["ינואר", "פברואר", "מרץ", "אפריל", "מאי", "יוני", "יולי", "אוגוסט", "ספטמבר", "אוקטובר", "נובמבר", "דצמבר"];
-    const dayNames = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת"];
-    let tableData = [];
-    
-    // מצב סינון
-    let filters = {
-        showWeekend: true,
-        showVacation: true
-    };
+    const RATE = 70; const TRAVEL = 16;
+    const MONTHS = ["ינואר", "פברואר", "מרץ", "אפריל", "מאי", "יוני", "יולי", "אוגוסט", "ספטמבר", "אוקטובר", "נובמבר", "דצמבר"];
+    const DAYS = ["א","ב","ג","ד","ה","ו","ש"];
+    const DEFAULT_TEXT = `היי פיל,
+מצורף דוח השעות שלי לחודש זה.
+לאחר בדיקה שלי מול הדוח שקיבלתי ממערכת מקאנו חשוב לי לומר שלפעמים יש תקלות במערכת וזה מראה לי שזה עושה כניסה ולא עושה או מראש לא עושה בכלל.
 
-    window.onload = function() {
-        initSelectors();
-        loadFromStorage();
-    };
+סה"כ שעות לתשלום: [שעות]
+סה"כ לתשלום (כולל נסיעות): [שכר]
+
+תודה, מתן`;
+
+    let tableData = [];
+    let currentFreeText = "";
+
+    window.onload = () => { initSelectors(); handleDateChange(); };
 
     function initSelectors() {
-        const ms = document.getElementById('monthSelect');
-        months.forEach((m, i) => ms.add(new Option(m, i)));
-        const ys = document.getElementById('yearSelect');
-        for (let y = 2020; y <= 2030; y++) ys.add(new Option(y, y));
-        
-        const now = new Date();
-        ms.value = now.getMonth();
-        ys.value = now.getFullYear();
+        const mSelect = document.getElementById('monthSelect');
+        MONTHS.forEach((m,i) => mSelect.add(new Option(m, i)));
+        const ySelect = document.getElementById('yearSelect');
+        for(let y=2024; y<=2030; y++) ySelect.add(new Option(y, y));
+        const now = new Date(); mSelect.value = now.getMonth(); ySelect.value = now.getFullYear();
     }
 
-    // --- לוגיקת סינון ---
-    function toggleFilter(type) {
-        if(type === 'weekend') {
-            filters.showWeekend = !filters.showWeekend;
-            const btn = document.getElementById('btnFilterWeekend');
-            btn.classList.toggle('active');
-            document.getElementById('iconWeekend').innerText = filters.showWeekend ? '👁️' : '🚫';
-        } else if (type === 'vacation') {
-            filters.showVacation = !filters.showVacation;
-            const btn = document.getElementById('btnFilterVacation');
-            btn.classList.toggle('active');
-            document.getElementById('iconVacation').innerText = filters.showVacation ? '👁️' : '🚫';
+    function handleDateChange() {
+        const m = document.getElementById('monthSelect').value;
+        const y = document.getElementById('yearSelect').value;
+        const key = `hours_v14_${y}_${m}`;
+        const stored = localStorage.getItem(key);
+        if(stored) {
+            const parsed = JSON.parse(stored);
+            tableData = parsed.data || [];
+            currentFreeText = parsed.text || DEFAULT_TEXT;
+            document.getElementById('customEmailText').value = currentFreeText;
+            renderTable();
+        } else {
+            generateNewMonth();
         }
-        renderTable();
     }
 
-    function generateTableData(keep = false) {
+    function generateNewMonth() {
         const m = parseInt(document.getElementById('monthSelect').value);
         const y = parseInt(document.getElementById('yearSelect').value);
-        const days = new Date(y, m + 1, 0).getDate();
-        const newData = [];
-
-        for (let i = 1; i <= days; i++) {
+        const daysInMonth = new Date(y, m+1, 0).getDate();
+        tableData = [];
+        currentFreeText = DEFAULT_TEXT;
+        document.getElementById('customEmailText').value = currentFreeText;
+        for(let i=1; i<=daysInMonth; i++) {
             const d = new Date(y, m, i);
-            const dow = d.getDay();
-            let ex = keep && tableData[i-1] ? tableData[i-1] : null;
-
-            newData.push({
-                dayIndex: i,
-                dateStr: `${i}/${m + 1}/${y}`,
-                dayName: dayNames[dow],
-                dayType: dow,
-                event: ex ? ex.event : (dow===5||dow===6 ? 'חופש' : ''),
-                philIn: ex ? ex.philIn : '', philOut: ex ? ex.philOut : '', philCalc: ex ? ex.philCalc : 0,
-                matanIn: ex ? ex.matanIn : '', matanOut: ex ? ex.matanOut : '', matanCalc: ex ? ex.matanCalc : 0,
-                notes: ex ? ex.notes : '', approved: ex ? ex.approved : false,
-                isWeekend: (dow===5 || dow===6)
+            const day = d.getDay();
+            const isWknd = (day===5 || day===6);
+            tableData.push({
+                dateStr: `${i}/${m+1}`, dayName: DAYS[day], dayType: day, isWeekend: isWknd,
+                event: isWknd?'חופש':'', hasTravel: !isWknd,
+                pIn:'', pOut:'', pCalc:0, mIn:'', mOut:'', mCalc:0, notes:'', approved:false
             });
         }
-        tableData = newData;
-        renderTable();
-        saveToStorage();
-        if(!keep) showMessage("טבלה נוצרה", "success");
+        renderTable(); saveData();
+    }
+
+    function calculateRow(r) {
+        const calc = (i,o) => {
+            if(!i||!o) return 0;
+            let d = (new Date(`2000-01-01T${o}`) - new Date(`2000-01-01T${i}`));
+            if(d<0) d+=86400000;
+            return Number((d/3600000).toFixed(2));
+        };
+        r.pCalc = calc(r.pIn, r.pOut); r.mCalc = calc(r.mIn, r.mOut);
+    }
+    
+    function getLateness(r) {
+        if(!r.mIn) return 0;
+        let l=""; if(r.dayType===0) l="12:45"; else if(r.dayType>=1 && r.dayType<=4) l="13:30"; else return 0;
+        const a=new Date(`2000-01-01T${r.mIn}`), t=new Date(`2000-01-01T${l}`);
+        return (a-t)>0 ? Math.floor((a-t)/60000) : 0;
     }
 
     function renderTable() {
-        const tbody = document.getElementById('tableBody');
-        tbody.innerHTML = '';
-        
-        let sP = 0, sM = 0, sL = 0;
+        const tbody = document.getElementById('tableBody'); tbody.innerHTML = '';
+        const showWknd = document.getElementById('toggleWeekend').checked;
+        const showVac = document.getElementById('toggleVacation').checked;
+        const doTravel = document.getElementById('toggleTravel').checked;
+        let tP=0, tM=0, tLate=0, tTrv=0;
 
-        tableData.forEach((row, idx) => {
-            calculateRow(row);
-            
-            sP += parseFloat(row.philCalc || 0);
-            sM += parseFloat(row.matanCalc || 0);
-            sL += calculateLateness(row);
+        tableData.forEach((r, i) => {
+            calculateRow(r);
+            if(!showWknd && r.isWeekend) return;
+            if(!showVac && r.event==='חופש') return;
 
-            if (!filters.showWeekend && row.isWeekend) return;
-            if (!filters.showVacation && row.event === 'חופש') return;
+            tP+=r.pCalc; tM+=r.mCalc; tLate+=getLateness(r);
+            const diff = r.pCalc - r.mCalc;
+            if(r.mCalc>0 && r.hasTravel) tTrv++;
 
             const tr = document.createElement('tr');
-            let cls = '';
-            if (row.approved) cls = 'row-approved';
-            else if (row.event === 'קייטנה') cls = 'row-camp';
-            else if (['חופש','חג','מחלה'].includes(row.event)) cls = 'row-event';
-            else if (row.isWeekend) cls = 'row-weekend';
-            else if ((row.philCalc > 0 && row.matanCalc === 0) || (row.philCalc === 0 && row.matanCalc > 0)) cls = 'row-missing';
-            tr.className = cls;
+            if(r.approved) tr.className='row-approved'; else if(r.isWeekend) tr.className='row-weekend';
+            else if(r.event) tr.className='row-event'; else if(Math.abs(diff)>0.05) tr.className='row-missing';
 
             tr.innerHTML = `
-                <td>${row.dateStr}</td><td>${row.dayName}</td>
-                <td><select onchange="upd(${idx},'event',this.value)">
-                    <option value="" ${row.event===''?'selected':''}>רגיל</option>
-                    <option value="חופש" ${row.event==='חופש'?'selected':''}>חופש</option>
-                    <option value="חג" ${row.event==='חג'?'selected':''}>חג</option>
-                    <option value="מחלה" ${row.event==='מחלה'?'selected':''}>מחלה</option>
-                    <option value="קייטנה" ${row.event==='קייטנה'?'selected':''}>קייטנה</option>
-                </select></td>
-                <td><input type="time" value="${row.philIn}" onchange="upd(${idx},'philIn',this.value)"></td>
-                <td><input type="time" value="${row.philOut}" onchange="upd(${idx},'philOut',this.value)"></td>
-                <td><strong>${Number(row.philCalc).toFixed(2)}</strong></td>
-                <td><input type="time" value="${row.matanIn}" onchange="upd(${idx},'matanIn',this.value)"></td>
-                <td><input type="time" value="${row.matanOut}" onchange="upd(${idx},'matanOut',this.value)"></td>
-                <td><strong>${Number(row.matanCalc).toFixed(2)}</strong></td>
-                <td style="color:${calculateLateness(row)>0?'red':'green'}">${calculateLatenessDisplay(row)}</td>
-                <td style="direction:ltr; color:${Math.abs(row.philCalc-row.matanCalc)>0.1?'red':'green'}">${(row.philCalc-row.matanCalc).toFixed(2)}</td>
-                <td><input type="text" value="${row.notes}" onchange="upd(${idx},'notes',this.value)"></td>
-                <td class="checkbox-wrapper"><input type="checkbox" ${row.approved?'checked':''} onchange="upd(${idx},'approved',this.checked)"><span>${row.approved?'✅':''}</span></td>
+                <td>${r.dateStr}</td><td>${r.dayName}</td>
+                <td><select onchange="upd(${i},'event',this.value)" style="width:100%"><option value="" ${r.event===''?'selected':''}>-</option><option value="חופש" ${r.event==='חופש'?'selected':''}>חופש</option><option value="מחלה" ${r.event==='מחלה'?'selected':''}>מחלה</option><option value="חג" ${r.event==='חג'?'selected':''}>חג</option><option value="קייטנה" ${r.event==='קייטנה'?'selected':''}>קייטנה</option></select></td>
+                <td><div class="checkbox-wrapper"><input type="checkbox" ${r.hasTravel?'checked':''} onchange="upd(${i},'hasTravel',this.checked)"></div></td>
+                <td><input type="time" value="${r.pIn}" onchange="upd(${i},'pIn',this.value)"></td><td><input type="time" value="${r.pOut}" onchange="upd(${i},'pOut',this.value)"></td><td><strong>${r.pCalc.toFixed(2)}</strong></td>
+                <td><input type="time" value="${r.mIn}" onchange="upd(${i},'mIn',this.value)"></td><td><input type="time" value="${r.mOut}" onchange="upd(${i},'mOut',this.value)"></td><td><strong>${r.mCalc.toFixed(2)}</strong></td>
+                <td>${getLateness(r)>0?`<span style="color:red;font-weight:bold">${getLateness(r)}</span>`:'-'}</td>
+                <td style="color:${Math.abs(diff)<0.05?'green':'red'}; direction:ltr; font-weight:bold">${diff.toFixed(2)}</td>
+                <td><input type="text" value="${r.notes}" onchange="upd(${i},'notes',this.value)"></td>
+                <td><div class="checkbox-wrapper"><input type="checkbox" ${r.approved?'checked':''} onchange="upd(${i},'approved',this.checked)"></div></td>
             `;
             tbody.appendChild(tr);
         });
 
-        document.getElementById('totalPhil').innerText = sP.toFixed(2);
-        document.getElementById('totalMatan').innerText = sM.toFixed(2);
-        document.getElementById('totalDiff').innerText = (sP - sM).toFixed(2);
-        document.getElementById('totalLateness').innerText = sL;
-
-        renderBottomReport(sP, sM);
-    }
-
-    function renderBottomReport(sP, sM) {
-        const diff = sM - sP;
-        const absDiff = Math.abs(diff).toFixed(2);
-        const el = document.getElementById('reportNarrative');
+        const travelAmount = doTravel ? (tTrv * TRAVEL) : 0;
+        const sal = (tM * RATE) + travelAmount;
         
-        if (diff > 0.01) { 
-            el.innerText = `מתן עבד ${absDiff} שעות יותר מפיל`; 
-            el.className = "diff-highlight diff-pos"; 
-        } else if (diff < -0.01) { 
-            el.innerText = `פיל רשם ${absDiff} שעות יותר ממתן`; 
-            el.className = "diff-highlight diff-neg"; 
-        } else { 
-            el.innerText = "שעות מאוזנות (0.00)"; 
-            el.className = "diff-highlight"; 
-            el.style.background="#eee"; 
-            el.style.color="#333"; 
-        }
-
-        const tbody = document.getElementById('philReportBody');
-        tbody.innerHTML = '';
-        const rows = tableData.filter(r => !r.approved && Math.abs(r.philCalc - r.matanCalc) > 0.1);
+        document.getElementById('sumPhil').innerText = tP.toFixed(2);
+        document.getElementById('sumMatan').innerText = tM.toFixed(2);
+        document.getElementById('sumDiff').innerText = (tP - tM).toFixed(2);
+        document.getElementById('sumLate').innerText = tLate;
+        document.getElementById('sumSalary').innerText = '₪' + sal.toLocaleString();
+        document.getElementById('travelBreakdown').innerText = `כולל נסיעות: ₪${travelAmount}`;
         
-        if(rows.length === 0) {
-            document.getElementById('philTable').style.display = 'none';
-            document.getElementById('philEmptyMsg').style.display = 'block';
+        const screenDiffBody = document.getElementById('screenDiffBody');
+        screenDiffBody.innerHTML = '';
+        const diffRows = tableData.filter(r => !r.approved && Math.abs(r.pCalc - r.mCalc) > 0.05);
+        if(diffRows.length === 0) {
+            document.getElementById('screenNoDiffs').style.display = 'block';
+            document.getElementById('screenDiffTable').style.display = 'none';
         } else {
-            document.getElementById('philTable').style.display = 'table';
-            document.getElementById('philEmptyMsg').style.display = 'none';
-            rows.forEach(r => {
+            document.getElementById('screenNoDiffs').style.display = 'none';
+            document.getElementById('screenDiffTable').style.display = 'table';
+            diffRows.forEach(r => {
                 const tr = document.createElement('tr');
-                tr.innerHTML = `<td>${r.dateStr}</td><td>${r.philCalc.toFixed(2)}</td><td>${r.matanCalc.toFixed(2)}</td>
-                <td style="color:red; font-weight:bold; direction:ltr">${(r.philCalc-r.matanCalc).toFixed(2)}</td><td>${r.notes}</td>`;
-                tbody.appendChild(tr);
+                tr.innerHTML = `<td>${r.dateStr}</td><td>${r.pCalc.toFixed(2)}</td><td><strong>${r.mCalc.toFixed(2)}</strong></td><td style="color:red;direction:ltr">${(r.pCalc-r.mCalc).toFixed(2)}</td><td>${r.notes}</td>`;
+                screenDiffBody.appendChild(tr);
             });
         }
     }
 
-    function upd(i, f, v) { 
-        tableData[i][f] = v; 
-        renderTable(); 
-        saveToStorage(); 
-    }
+    function upd(i, f, v) { tableData[i][f] = v; renderTable(); saveData(); }
     
-    // --- PDF Export Logic ---
-    function exportToPDF() {
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF();
-        const he = (s) => s ? s.toString().split("").reverse().join("") : "";
-        const mStr = months[document.getElementById('monthSelect').value];
-        const yStr = document.getElementById('yearSelect').value;
+    function saveData() {
+        const m = document.getElementById('monthSelect').value;
+        const y = document.getElementById('yearSelect').value;
+        currentFreeText = document.getElementById('customEmailText').value;
+        localStorage.setItem(`hours_v14_${y}_${m}`, JSON.stringify({ data: tableData, text: currentFreeText }));
+    }
 
-        // --- עמוד 1: הטבלה המלאה ---
-        doc.setFontSize(22);
-        doc.setTextColor(44, 62, 80);
-        doc.text(he(`דוח שעות חודשי - ${mStr} ${yStr}`), 200, 20, { align: 'left' });
+    function generatePrintView() {
+        const pBody = document.querySelector('#printTableBody tbody');
+        const diffBody = document.getElementById('diffTableBody');
+        pBody.innerHTML = ''; diffBody.innerHTML = '';
+        let hasDiffs = false;
+
+        const dateTxt = `${MONTHS[document.getElementById('monthSelect').value]} ${document.getElementById('yearSelect').value}`;
+        ['pDate1', 'pDate2', 'pDateLetter'].forEach(id => document.getElementById(id).innerText = dateTxt);
         
-        const visibleData = tableData.filter(row => {
-            if (!filters.showWeekend && row.isWeekend) return false;
-            if (!filters.showVacation && row.event === 'חופש') return false;
-            return true;
-        });
+        document.getElementById('p2SumMatan').innerText = document.getElementById('sumMatan').innerText;
+        document.getElementById('p2SumPhil').innerText = document.getElementById('sumPhil').innerText;
+        document.getElementById('p2SumDiff').innerText = document.getElementById('sumDiff').innerText;
+        document.getElementById('p2SumPay').innerText = document.getElementById('sumSalary').innerText;
+        document.getElementById('p2Travel').innerText = document.getElementById('travelBreakdown').innerText;
 
-        const headers = [['Status', 'Notes', 'Diff', 'Matan', 'Phil', 'Out', 'In', 'Day', 'Date']];
-        const body = visibleData.map(r => [
-            r.approved ? 'OK' : '',
-            he(r.notes),
-            (r.philCalc - r.matanCalc).toFixed(2),
-            r.matanCalc,
-            r.philCalc,
-            r.philOut,
-            r.philIn,
-            he(r.dayName),
-            r.dateStr
-        ]);
+        let letter = document.getElementById('customEmailText').value;
+        letter = letter.replace('[שעות]', document.getElementById('sumMatan').innerText);
+        letter = letter.replace('[שכר]', document.getElementById('sumSalary').innerText);
+        document.getElementById('printLetterContent').innerText = letter;
 
-        doc.autoTable({
-            head: headers,
-            body: body,
-            startY: 30,
-            styles: { halign: 'center', fontSize: 9 },
-            headStyles: { fillColor: [44, 62, 80] },
-            didParseCell: function(data) {
-                if(data.section === 'body') {
-                    const r = visibleData[data.row.index];
-                    if(r.approved) data.cell.styles.fillColor = [212, 247, 212];
-                    else if(r.isWeekend) data.cell.styles.fillColor = [255, 230, 230];
-                    else if(Math.abs(r.philCalc - r.matanCalc) > 0.1) data.cell.styles.textColor = [200, 0, 0];
-                }
-            }
-        });
-
-        // --- עמוד 2: סיכומים ופערים ---
-        doc.addPage();
-        
-        doc.setFontSize(20);
-        doc.setTextColor(44, 62, 80);
-        doc.text(he("סיכום מנהלים והפרשים"), 200, 20, {align: 'left'});
-
-        const totP = visibleData.reduce((a,b) => a + (b.philCalc || 0), 0);
-        const totM = visibleData.reduce((a,b) => a + (b.matanCalc || 0), 0);
-        const diff = totP - totM;
-
-        const startY = 35;
-        const boxW = 50;
-        const boxH = 25;
-        
-        // Phil Box
-        doc.setFillColor(248, 249, 250); 
-        doc.rect(150, startY, boxW, boxH, 'F');
-        doc.setFontSize(10); 
-        doc.text(he("סה\"כ פיל"), 175, startY + 8, {align:'center'});
-        doc.setFontSize(16); 
-        doc.setTextColor(44, 62, 80); 
-        doc.text(totP.toFixed(2), 175, startY + 18, {align:'center'});
-
-        // Matan Box
-        doc.setFillColor(248, 249, 250); 
-        doc.rect(90, startY, boxW, boxH, 'F');
-        doc.setFontSize(10); 
-        doc.text(he("סה\"כ מתן"), 115, startY + 8, {align:'center'});
-        doc.setFontSize(16); 
-        doc.text(totM.toFixed(2), 115, startY + 18, {align:'center'});
-
-        // Diff Box
-        doc.setFillColor(248, 249, 250); 
-        doc.rect(30, startY, boxW, boxH, 'F');
-        doc.setFontSize(10); 
-        doc.text(he("הפרש"), 55, startY + 8, {align:'center'});
-        doc.setFontSize(16); 
-        doc.setTextColor(diff > 0 ? [200, 0, 0] : [0, 150, 0]); 
-        doc.text(diff.toFixed(2), 55, startY + 18, {align:'center'});
-
-        doc.setFontSize(14);
-        doc.setTextColor(50);
-        let narrative = "";
-        if(Math.abs(diff) < 0.1) {
-            narrative = "השעות מאוזנות";
-        } else if(diff < 0) {
-            narrative = `מתן עבד ${Math.abs(diff).toFixed(2)} שעות יותר`;
-        } else {
-            narrative = `פיל רשם ${diff.toFixed(2)} שעות יותר`;
-        }
-        doc.text(he(narrative), 200, startY + 40, {align: 'left'});
-
-        doc.setFontSize(12);
-        doc.setTextColor(200, 0, 0);
-        doc.text(he("פירוט שורות הדורשות התייחסות:"), 200, startY + 55, {align: 'left'});
-
-        const diffRows = visibleData.filter(r => !r.approved && Math.abs(r.philCalc - r.matanCalc) > 0.1);
-        
-        if (diffRows.length > 0) {
-            const diffBody = diffRows.map(r => [
-                he(r.notes),
-                (r.philCalc - r.matanCalc).toFixed(2),
-                r.matanCalc,
-                r.philCalc,
-                r.dateStr
-            ]);
-
-            doc.autoTable({
-                head: [['Notes', 'Diff', 'Matan', 'Phil', 'Date']],
-                body: diffBody,
-                startY: startY + 60,
-                theme: 'grid',
-                headStyles: { fillColor: [231, 76, 60] },
-                styles: { halign: 'center' }
-            });
-        } else {
-            doc.setTextColor(39, 174, 96);
-            doc.text(he("אין פערים פתוחים! הכל מאושר."), 105, startY + 70, {align: 'center'});
-        }
-
-        doc.save(`report_${mStr}_${yStr}.pdf`);
-    }
-
-    // --- חישובים ועזרים ---
-    function calculateRow(row) {
-        row.philCalc = (row.philIn && row.philOut) ? timeDiff(row.philIn, row.philOut) : (row.philIn===''&&row.philOut==='' ? 0 : row.philCalc);
-        row.matanCalc = (row.matanIn && row.matanOut) ? timeDiff(row.matanIn, row.matanOut) : 0;
-    }
-    
-    function timeDiff(s, e) {
-        let d = (new Date(`2000-01-01T${e}`) - new Date(`2000-01-01T${s}`));
-        if(d < 0) d += 86400000;
-        return Math.round((d / 3600000) * 4) / 4;
-    }
-    
-    function calculateLateness(r) {
-        if(!r.philIn || !r.matanIn) return 0;
-        let d = new Date(`2000-01-01T${r.matanIn}`) - new Date(`2000-01-01T${r.philIn}`);
-        return d > 0 ? Math.floor(d / 60000) : 0;
-    }
-    
-    function calculateLatenessDisplay(r) {
-        const m = calculateLateness(r);
-        return m <= 0 ? "-" : `${Math.floor(m/60)}:${(m%60).toString().padStart(2,'0')}`;
-    }
-    
-    function autoFillMatan() {
-        if(!confirm("למלא שעות מתן אוטומטית?")) return;
         tableData.forEach(r => {
-            if(r.approved || r.isWeekend) return;
-            if(r.dayType === 0) { 
-                r.matanIn = "12:45"; 
-                r.matanOut = "16:30"; 
-            } else if(r.dayType >= 1 && r.dayType <= 4) { 
-                r.matanIn = "13:30"; 
-                r.matanOut = "16:30"; 
+            const diff = r.pCalc - r.mCalc;
+            const tr = document.createElement('tr');
+            if(r.approved) tr.className = 'p-row-approved'; else if(r.isWeekend) tr.className = 'p-row-weekend';
+            
+            // תצוגת "מאושר" מותאמת להדפסה (טקסט במקום צ'קבוקס)
+            const approvedMark = r.approved ? '<span class="status-ok">✔</span>' : '';
+
+            tr.innerHTML = `
+                <td>${r.dateStr}</td><td>${r.dayName}</td><td>${r.event||r.notes}</td>
+                <td>${r.pIn}</td><td>${r.pOut}</td><td>${r.pCalc>0?r.pCalc.toFixed(2):''}</td>
+                <td style="font-weight:bold; border-right:2px solid #333">${r.mIn}</td>
+                <td style="font-weight:bold">${r.mOut}</td>
+                <td style="font-weight:bold">${r.mCalc>0?r.mCalc.toFixed(2):''}</td>
+                <td style="direction:ltr" class="${Math.abs(diff)>0.05?'p-diff':''}">${diff.toFixed(2)}</td>
+                <td>${approvedMark}</td>`;
+            pBody.appendChild(tr);
+
+            if(!r.approved && Math.abs(diff) > 0.05) {
+                hasDiffs = true;
+                const dTr = document.createElement('tr');
+                dTr.innerHTML = `<td>${r.dateStr} (${r.dayName})</td><td>${r.pCalc.toFixed(2)}</td><td><strong>${r.mCalc.toFixed(2)}</strong></td><td style="color:red;direction:ltr">${diff.toFixed(2)}</td><td>${r.notes}</td>`;
+                diffBody.appendChild(dTr);
             }
         });
-        renderTable(); 
-        showMessage("מולא בהצלחה", "success");
+
+        document.getElementById('noDiffMsg').style.display = hasDiffs ? 'none' : 'block';
+        setTimeout(() => window.print(), 200);
     }
 
-    // --- טעינת קובץ Excel ---
     function handleFile(input) {
-        const f = input.files[0]; 
-        if(!f) return;
-        
-        const r = new FileReader();
-        r.onload = e => {
+        const file = input.files[0]; if(!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
             try {
                 const wb = XLSX.read(e.target.result, {type:'array'});
-                
-                // נבדוק את כל הדפים בקובץ
-                for (let sheetName of wb.SheetNames) {
-                    const sheet = wb.Sheets[sheetName];
-                    const rows = XLSX.utils.sheet_to_json(sheet, {header:1, defval:""});
-                    
-                    if (rows.length > 0) {
-                        console.log("Processing sheet:", sheetName);
-                        console.log("First few rows:", rows.slice(0, 5));
-                        
-                        const result = processExcel(rows);
-                        if (result.processed > 0) {
-                            showMessage(`נטענו ${result.processed} שורות מפיל`, "success");
-                            return;
-                        }
+                const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header:1, defval:""});
+                let dateCol=-1, startCol=-1, endCol=-1, headerRow=-1;
+                for(let i=0; i<Math.min(rows.length, 12); i++) {
+                    const r = rows[i].map(c => String(c).toLowerCase().trim());
+                    if(r.some(c => c.includes('תאריך') || c.includes('date'))) {
+                        headerRow = i;
+                        r.forEach((c, idx) => {
+                            if(c.includes('תאריך')||c.includes('date')) dateCol=idx;
+                            if(c.includes('כניסה')||c.includes('in')||c.includes('start')) startCol=idx;
+                            if(c.includes('יציאה')||c.includes('out')||c.includes('end')) endCol=idx;
+                        }); break;
                     }
                 }
-                
-                showMessage("לא נמצאו נתונים מתאימים בקובץ", "error");
-            } catch(x) { 
-                showMessage(`שגיאה בקריאת הקובץ: ${x.message}`, "error"); 
-                console.error(x);
-            }
+                if(dateCol===-1) { dateCol=1; startCol=3; endCol=4; headerRow=1; }
+                const m = parseInt(document.getElementById('monthSelect').value);
+                let u=0;
+                for(let i=headerRow+1; i<rows.length; i++) {
+                    const r = rows[i]; if(!r[dateCol]) continue;
+                    let d=-1;
+                    if(typeof r[dateCol]==='number') { const dt=new Date(Math.round((r[dateCol]-25569)*86400*1000)); if(dt.getMonth()===m) d=dt.getDate(); }
+                    else if(typeof r[dateCol]==='string') { const p=r[dateCol].split(/[\/\.]/); if(p.length>0) d=parseInt(p[0]); }
+                    
+                    if(d>0 && d<=tableData.length) {
+                        const clean=(v)=>{
+                            if(typeof v==='number'){ const t=Math.round(v*1440), h=Math.floor(t/60), mn=t%60; return `${String(h).padStart(2,'0')}:${String(mn).padStart(2,'0')}`; }
+                            return v?String(v).replace(/[^\d:]/g,'').substring(0,5):'';
+                        };
+                        const iT=clean(r[startCol]), oT=clean(r[endCol]);
+                        if(iT && oT) { tableData[d-1].pIn=iT; tableData[d-1].pOut=oT; u++; }
+                    }
+                }
+                renderTable(); saveData(); msg(`נטענו ${u} שורות`, 'success');
+            } catch(ex) { msg('שגיאה בקובץ', 'error'); }
         };
-        r.readAsArrayBuffer(f);
+        reader.readAsArrayBuffer(file); input.value='';
     }
 
-    function processExcel(rows) {
-        console.log("Processing Excel file with", rows.length, "rows");
-        
-        // מציאת שורת הכותרות
-        let dateCol = -1, startCol = -1, endCol = -1;
-        let headerRowIndex = -1;
-        
-        // חיפוש שורת כותרות (מקסימום 10 שורות ראשונות)
-        for (let i = 0; i < Math.min(rows.length, 10); i++) {
-            const row = rows[i];
-            for (let j = 0; j < row.length; j++) {
-                const cell = String(row[j]).toLowerCase().trim();
-                
-                if (cell.includes('תאריך') || cell.includes('date')) {
-                    dateCol = j;
-                    headerRowIndex = i;
-                }
-                if (cell.includes('כניסה') || cell.includes('start') || cell.includes('in')) {
-                    startCol = j;
-                    headerRowIndex = i;
-                }
-                if (cell.includes('יציאה') || cell.includes('end') || cell.includes('out')) {
-                    endCol = j;
-                    headerRowIndex = i;
-                }
+    function autoFillMatan() {
+        if(!confirm("למלא אוטומטית?")) return;
+        let c=0;
+        tableData.forEach(r => {
+            if(!r.approved && !r.isWeekend && !r.event && !r.mIn) {
+                if(r.dayType===0){r.mIn="12:45";r.mOut="16:30";c++;}
+                else{r.mIn="13:30";r.mOut="16:30";c++;}
             }
-            
-            // אם מצאנו לפחות עמודת תאריך, נעצור
-            if (dateCol !== -1) {
-                break;
-            }
-        }
-        
-        // אם לא מצאנו כותרות, ננסה לנחש לפי המיקום (עבור הקובץ הספציפי)
-        if (dateCol === -1) {
-            console.log("No headers found, trying to guess columns");
-            // עבור הקובץ ששלחת: עמודה B (1) = תאריך, עמודה D (3) = כניסה, עמודה E (4) = יציאה
-            dateCol = 1;
-            startCol = 3;
-            endCol = 4;
-            headerRowIndex = 1; // שורה 1 היא כותרת (שורה 0 היא שם העובד)
-        }
-        
-        console.log("Columns found - Date:", dateCol, "Start:", startCol, "End:", endCol, "Header row:", headerRowIndex);
-        
-        const selectedMonth = parseInt(document.getElementById('monthSelect').value);
-        const selectedYear = parseInt(document.getElementById('yearSelect').value);
-        
-        let processedCount = 0;
-        
-        // עיבוד השורות (מתחילים מהשורה אחרי הכותרות)
-        for (let i = headerRowIndex + 1; i < rows.length; i++) {
-            const row = rows[i];
-            if (!row || row.length === 0) continue;
-            
-            const dateVal = row[dateCol];
-            if (!dateVal) continue;
-            
-            // ניסיון לפרסר תאריך
-            let dateObj = null;
-            
-            // אם התאריך הוא מספר אקסל
-            if (typeof dateVal === 'number') {
-                try {
-                    // המרת מספר אקסל לתאריך
-                    const excelEpoch = new Date(1899, 11, 30); // 30/12/1899
-                    const days = Math.floor(dateVal);
-                    const ms = Math.round((dateVal - days) * 86400000);
-                    dateObj = new Date(excelEpoch.getTime() + days * 86400000 + ms);
-                } catch (e) {
-                    console.warn("Failed to parse Excel date number:", dateVal, e);
-                }
-            }
-            
-            // אם עדיין לא מצאנו, ננסה כטקסט
-            if (!dateObj || isNaN(dateObj.getTime())) {
-                const dateStr = String(dateVal).trim();
-                
-                // נסה פורמט dd/MM (ללא שנה) - כמו בקובץ שלך
-                const match = dateStr.match(/^(\d{1,2})\/(\d{1,2})$/);
-                if (match) {
-                    const day = parseInt(match[1]);
-                    const month = parseInt(match[2]) - 1; // חודשים ב-JS הם 0-11
-                    // ניצור תאריך עם השנה הנבחרת
-                    dateObj = new Date(selectedYear, month, day);
-                } 
-                // נסה פורמט dd/MM/yyyy
-                else if (dateStr.match(/^\d{1,2}\/\d{1,2}\/\d{4}$/)) {
-                    const parts = dateStr.split('/');
-                    const day = parseInt(parts[0]);
-                    const month = parseInt(parts[1]) - 1;
-                    const year = parseInt(parts[2]);
-                    dateObj = new Date(year, month, day);
-                }
-                // נסה פורמט dd.MM.yyyy
-                else if (dateStr.match(/^\d{1,2}\.\d{1,2}\.\d{4}$/)) {
-                    const parts = dateStr.split('.');
-                    const day = parseInt(parts[0]);
-                    const month = parseInt(parts[1]) - 1;
-                    const year = parseInt(parts[2]);
-                    dateObj = new Date(year, month, day);
-                }
-                // נסה פורמט yyyy-MM-dd
-                else if (dateStr.match(/^\d{4}-\d{1,2}-\d{1,2}$/)) {
-                    dateObj = new Date(dateStr);
-                }
-            }
-            
-            // אם לא הצלחנו לפרסר, נדלג על השורה
-            if (!dateObj || isNaN(dateObj.getTime())) {
-                console.warn("Could not parse date:", dateVal, "at row", i);
-                continue;
-            }
-            
-            // בדיקה שהתאריך הוא בחודש ובשנה הנבחרים
-            if (dateObj.getMonth() === selectedMonth && dateObj.getFullYear() === selectedYear) {
-                const dayOfMonth = dateObj.getDate();
-                const targetRow = tableData[dayOfMonth - 1];
-                
-                if (targetRow && !targetRow.approved) {
-                    // ניקוי והמרת זמן
-                    const startTime = cleanTime(row[startCol]);
-                    const endTime = cleanTime(row[endCol]);
-                    
-                    if (startTime && endTime) {
-                        targetRow.philIn = startTime;
-                        targetRow.philOut = endTime;
-                        processedCount++;
-                        
-                        console.log(`Updated day ${dayOfMonth}:`, {
-                            date: targetRow.dateStr,
-                            philIn: targetRow.philIn,
-                            philOut: targetRow.philOut
-                        });
-                    }
-                }
-            }
-        }
-        
-        if (processedCount > 0) {
-            renderTable();
-            saveToStorage();
-        }
-        
-        return { processed: processedCount };
-    }
-    
-    function cleanTime(timeValue) {
-        if (!timeValue && timeValue !== 0) return "";
-        
-        // אם זה מספר (אקסל זמן)
-        if (typeof timeValue === 'number') {
-            // זמן באקסל הוא שבר של יום
-            const totalSeconds = Math.round(timeValue * 86400);
-            const hours = Math.floor(totalSeconds / 3600);
-            const minutes = Math.floor((totalSeconds % 3600) / 60);
-            return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
-        }
-        
-        let timeStr = String(timeValue).trim();
-        
-        // הסרת כוכביות וסימנים נוספים
-        timeStr = timeStr.replace(/\*/g, '').trim();
-        
-        // אם בפורמט HH:MM
-        if (timeStr.match(/^\d{1,2}:\d{2}$/)) {
-            const [h, m] = timeStr.split(':').map(Number);
-            return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-        }
-        
-        // אם בפורמט HH:MM:SS
-        if (timeStr.match(/^\d{1,2}:\d{2}:\d{2}$/)) {
-            return timeStr.substring(0, 5);
-        }
-        
-        // אם זה מספר בלבד (כמו 830 או 1830)
-        if (timeStr.match(/^\d{3,4}$/)) {
-            const num = parseInt(timeStr, 10);
-            const hours = Math.floor(num / 100);
-            const minutes = num % 100;
-            return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
-        }
-        
-        return "";
-    }
-    
-    function exportToExcel() {
-        const visibleData = tableData.filter(row => {
-            if (!filters.showWeekend && row.isWeekend) return false;
-            if (!filters.showVacation && row.event === 'חופש') return false;
-            return true;
         });
+        renderTable(); saveData(); msg(`מולאו ${c} ימים`, 'success');
+    }
 
-        const ws = XLSX.utils.json_to_sheet(visibleData.map(r => ({
-            "תאריך": r.dateStr, 
-            "יום": r.dayName, 
-            "אירוע": r.event,
-            "כניסה פיל": r.philIn, 
-            "יציאה פיל": r.philOut, 
-            "שעות פיל": r.philCalc,
-            "כניסה מתן": r.matanIn, 
-            "יציאה מתן": r.matanOut, 
-            "שעות מתן": r.matanCalc,
-            "הפרש": (r.philCalc - r.matanCalc).toFixed(2), 
-            "הערות": r.notes
-        })));
-        
-        const wb = XLSX.utils.book_new(); 
-        XLSX.utils.book_append_sheet(wb, ws, "Hours");
-        XLSX.writeFile(wb, `hours_${months[document.getElementById('monthSelect').value]}_${document.getElementById('yearSelect').value}.xlsx`);
+    function saveBackup() {
+        const blob = new Blob([JSON.stringify({data:tableData, text:currentFreeText})], {type: "application/json"});
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+        a.download = `backup_${document.getElementById('yearSelect').value}_${parseInt(document.getElementById('monthSelect').value)+1}.json`; a.click();
     }
-    
-    function showMessage(m, t) { 
-        const e = document.getElementById('message-area'); 
-        e.innerText = m; 
-        e.className = t === 'success' ? 'msg-success' : 'msg-error'; 
-        e.style.display = 'block'; 
-        setTimeout(() => e.style.display = 'none', 3000); 
+    function loadBackup(input) {
+        const f = input.files[0]; if(!f) return;
+        const r = new FileReader();
+        r.onload = (e) => { 
+            const p = JSON.parse(e.target.result); tableData = p.data||p; currentFreeText=p.text||DEFAULT_TEXT;
+            document.getElementById('customEmailText').value = currentFreeText;
+            renderTable(); saveData(); msg('גיבוי נטען','success');
+        }; r.readAsText(f); input.value='';
     }
-    
-    function saveToStorage() { 
-        localStorage.setItem('whData', JSON.stringify({ 
-            m: document.getElementById('monthSelect').value, 
-            y: document.getElementById('yearSelect').value, 
-            d: tableData 
-        })); 
-    }
-    
-    function loadFromStorage() {
-        const s = localStorage.getItem('whData');
-        if(s) { 
-            try { 
-                const p = JSON.parse(s); 
-                document.getElementById('monthSelect').value = p.m; 
-                document.getElementById('yearSelect').value = p.y; 
-                tableData = p.d; 
-                renderTable(); 
-            } catch(e) { 
-                console.error("Error loading from storage:", e);
-                generateTableData(); 
-            } 
-        } else {
-            generateTableData();
-        }
-    }
-    
-    function clearData() { 
-        if(confirm("למחוק את כל הנתונים?")) { 
-            localStorage.removeItem('whData'); 
-            generateTableData(); 
-            showMessage("הנתונים נמחקו", "success");
-        } 
-    }
+    function clearData() { if(confirm("למחוק?")) { generateNewMonth(); msg('נוקה','success'); } }
+    function sendWhatsapp() { const t = `היי פיל, דוח שעות ${MONTHS[document.getElementById('monthSelect').value]}. סה"כ: ${document.getElementById('sumSalary').innerText}.`; window.open(`https://wa.me/?text=${encodeURIComponent(t)}`, '_blank'); }
+    function exportToExcel() { const ws = XLSX.utils.json_to_sheet(tableData.map(r=>({"תאריך":r.dateStr,"יום":r.dayName,"כניסה פיל":r.pIn,"יציאה פיל":r.pOut,"שעות פיל":r.pCalc,"כניסה מתן":r.mIn,"יציאה מתן":r.mOut,"שעות מתן":r.mCalc,"הערות":r.notes}))); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Hours"); XLSX.writeFile(wb, "Hours_Report.xlsx"); }
+    function msg(t, type) { const el=document.getElementById('message-area'); el.innerText=t; el.className=type==='success'?'msg-success':'msg-error'; el.style.display='block'; setTimeout(()=>el.style.display='none',3000); }
 </script>
-
 </body>
 </html>
